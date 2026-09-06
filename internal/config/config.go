@@ -42,7 +42,7 @@ func Load() (*Config, error) {
 		DerivWSURL:         getEnv("DERIV_WS_URL", "wss://ws.derivws.com/websockets/v3"),
 		DatabaseURL:        getEnv("DATABASE_URL", ""),
 		AppSecretKeyB64:    getEnv("APP_SECRET_KEY", ""),
-		HTTPAddr:           getEnv("HTTP_ADDR", ":8080"),
+		HTTPAddr:           getEnv("HTTP_ADDR", ":"+getEnv("PORT", "8080")),
 		DigitWindowSize:    getEnvInt("DIGIT_WINDOW_SIZE", 200),
 		DigitThresholdPct:  getEnvFloat("DIGIT_THRESHOLD_PCT", 4.0),
 		MomentumWindowSize: getEnvInt("MOMENTUM_WINDOW_SIZE", 20),
