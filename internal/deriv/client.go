@@ -12,6 +12,7 @@ package deriv
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -45,21 +46,15 @@ type Client struct {
 
 // Connect dials the given Deriv websocket URL (include ?app_id=... in the URL).
 func Connect(url string) (*Client, error) {
-	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
+	conn, resp, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("dial deriv websocket: %w", err)
+		if resp != nil {
+			body, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+			resp.Body.Close()
+			return nil, fmt.Errorf("dial deriv websocket: %w (http %d, body: %q)", err, resp.StatusCode, string(body))
+		}
+		return nil, fmt.Errorf("dial deriv websocket: %w (no http response - connection likely blocked before reaching Deriv)", err)
 	}
-	c := &Client{
-		url:     url,
-		conn:    conn,
-		pending: make(map[int64]chan json.RawMessage),
-		streams: make(map[int64]chan json.RawMessage),
-		closed:  make(chan struct{}),
-	}
-	go c.readLoop()
-	go c.pingLoop()
-	return c, nil
-}
 
 // Close shuts down the underlying connection.
 func (c *Client) Close() error {
