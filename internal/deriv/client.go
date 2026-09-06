@@ -304,7 +304,6 @@ func (c *Client) TicksHistoryCandles(symbol string, granularitySecs, count int) 
 func (c *Client) ActiveSymbols() ([]ActiveSymbolInfo, error) {
 	data, err := c.Call(map[string]interface{}{
 		"active_symbols": "brief",
-		"product_type":   "basic",
 	})
 	if err != nil {
 		return nil, err
