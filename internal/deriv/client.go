@@ -55,6 +55,17 @@ func Connect(url string) (*Client, error) {
 		}
 		return nil, fmt.Errorf("dial deriv websocket: %w (no http response - connection likely blocked before reaching Deriv)", err)
 	}
+	c := &Client{
+		url:     url,
+		conn:    conn,
+		pending: make(map[int64]chan json.RawMessage),
+		streams: make(map[int64]chan json.RawMessage),
+		closed:  make(chan struct{}),
+	}
+	go c.readLoop()
+	go c.pingLoop()
+	return c, nil
+}
 
 // Close shuts down the underlying connection.
 func (c *Client) Close() error {
