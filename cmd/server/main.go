@@ -1,10 +1,12 @@
 // Command server runs the Deriv Volatility signal dashboard: it connects to
 // Deriv's public market feed for R_10/25/50/75/100, tracks digit frequency
-// and tick momentum, serves a live dashboard over HTTP/WebSocket, and lets
-// users connect their own Deriv account via OAuth to see their balance.
+// and tick momentum, and serves a live dashboard over HTTP/WebSocket with a
+// backtest panel. Account linking (Deriv OAuth login/balance) is not in this
+// build - see README - since it needs a classic app_id, and self-service
+// registration currently only issues app_ids for Deriv's newer, incompatible
+// Options API.
 //
-// See README.md for setup instructions (registering a Deriv app, database,
-// environment variables) before running this.
+// See README.md for setup instructions before running this.
 package main
 
 import (
@@ -13,7 +15,6 @@ import (
 	"net/http"
 
 	"github.com/gatiella/deriv-signal-bot/internal/config"
-	"github.com/gatiella/deriv-signal-bot/internal/cryptoutil"
 	"github.com/gatiella/deriv-signal-bot/internal/httpapi"
 	"github.com/gatiella/deriv-signal-bot/internal/ingestion"
 	"github.com/gatiella/deriv-signal-bot/internal/signals"
@@ -31,11 +32,6 @@ func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("config: %v", err)
-	}
-
-	box, err := cryptoutil.NewBox(cfg.AppSecretKeyB64)
-	if err != nil {
-		log.Fatalf("crypto: %v", err)
 	}
 
 	st, err := store.Open(cfg.DatabaseURL)
@@ -67,7 +63,7 @@ func main() {
 	feed := ingestion.New(cfg.DerivWSURL, cfg.AppID, engine)
 	go feed.Run()
 
-	srv := httpapi.New(cfg, st, box, hub)
+	srv := httpapi.New(cfg, st, hub)
 
 	log.Printf("deriv-signal-bot listening on %s", cfg.HTTPAddr)
 	log.Printf("watching symbols: %v", ingestion.Symbols)

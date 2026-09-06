@@ -9,17 +9,15 @@ import (
 
 // Config holds every tunable value the app needs at startup.
 type Config struct {
-	// Deriv application registration (see README "Connecting your Deriv account").
-	AppID         string
-	OAuthLoginURL string // base URL for Deriv's OAuth login redirect
-	OAuthRedirect string // must exactly match the redirect URI registered with Deriv
-	DerivWSURL    string // Deriv websocket endpoint (public + authorized calls)
+	// Deriv application registration - must be a classic app_id valid for
+	// wss://ws.derivws.com/websockets/v3 (see README: the newer
+	// developers.deriv.com portal issues app_ids for a different, incompatible
+	// system - use the shared public test id 1089 until you have your own).
+	AppID      string
+	DerivWSURL string // Deriv websocket endpoint for public market data
 
 	// Storage.
 	DatabaseURL string
-
-	// Security.
-	AppSecretKeyB64 string // 32-byte AES-256 key, base64-encoded, used to encrypt stored Deriv tokens
 
 	// HTTP server.
 	HTTPAddr string
@@ -32,16 +30,12 @@ type Config struct {
 }
 
 // Load reads configuration from environment variables, applying defaults for
-// anything not explicitly set. It does not validate secrets are non-empty;
-// callers should check the fields they need before using them.
+// anything not explicitly set.
 func Load() (*Config, error) {
 	cfg := &Config{
 		AppID:              getEnv("APP_ID", ""),
-		OAuthLoginURL:      getEnv("DERIV_OAUTH_LOGIN_URL", "https://oauth.deriv.com/oauth2/authorize"),
-		OAuthRedirect:      getEnv("OAUTH_REDIRECT_URL", "http://localhost:8080/auth/deriv/callback"),
 		DerivWSURL:         getEnv("DERIV_WS_URL", "wss://ws.derivws.com/websockets/v3"),
 		DatabaseURL:        getEnv("DATABASE_URL", ""),
-		AppSecretKeyB64:    getEnv("APP_SECRET_KEY", ""),
 		HTTPAddr:           getEnv("HTTP_ADDR", ":"+getEnv("PORT", "8080")),
 		DigitWindowSize:    getEnvInt("DIGIT_WINDOW_SIZE", 200),
 		DigitThresholdPct:  getEnvFloat("DIGIT_THRESHOLD_PCT", 4.0),
@@ -50,13 +44,10 @@ func Load() (*Config, error) {
 	}
 
 	if cfg.AppID == "" {
-		return nil, fmt.Errorf("APP_ID is required (register a free application at https://app.deriv.com/account/api-token or the API dashboard)")
+		return nil, fmt.Errorf("APP_ID is required (use 1089 for the shared public test app, or your own classic app_id)")
 	}
 	if cfg.DatabaseURL == "" {
 		return nil, fmt.Errorf("DATABASE_URL is required, e.g. postgres://user:pass@localhost:5432/deriv_signal_bot?sslmode=disable")
-	}
-	if len(cfg.AppSecretKeyB64) == 0 {
-		return nil, fmt.Errorf("APP_SECRET_KEY is required: a base64-encoded 32-byte key used to encrypt stored Deriv tokens (see README to generate one)")
 	}
 
 	return cfg, nil

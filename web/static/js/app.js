@@ -3,7 +3,6 @@ const SYMBOLS = ["R_10", "R_25", "R_50", "R_75", "R_100"];
 
 const symbolGrid = document.getElementById("symbol-grid");
 const connDot = document.getElementById("conn-dot");
-const accountArea = document.getElementById("account-area");
 const signalLog = document.getElementById("signal-log");
 const signalFilter = document.getElementById("signal-filter");
 const btSymbolSelect = document.getElementById("bt-symbol");
@@ -140,36 +139,6 @@ async function loadRecentSignals() {
 signalFilter.addEventListener("change", loadRecentSignals);
 loadRecentSignals();
 
-// ---- Account panel ------------------------------------------------------------
-
-async function loadAccount() {
-  const res = await fetch("/api/me");
-  const me = await res.json();
-  if (!me.logged_in) {
-    accountArea.innerHTML = `<a class="btn btn-connect" href="/auth/deriv/login">Connect Deriv account</a>`;
-    return;
-  }
-  const accountsHtml = (me.accounts || [])
-    .map((a) => {
-      const bal = a.balance_ok ? `${a.balance.toFixed(2)} ${a.currency}` : "—";
-      const kind = a.is_virtual ? "demo" : "real";
-      return `<span class="acct">${a.loginid} (${kind})</span> <span class="bal">${bal}</span>`;
-    })
-    .join(" &nbsp;·&nbsp; ");
-  accountArea.innerHTML = `
-    <div class="account-view">
-      <span>${me.email}</span>
-      ${accountsHtml}
-      <button class="btn" id="logout-btn">Log out</button>
-    </div>
-  `;
-  document.getElementById("logout-btn").addEventListener("click", async () => {
-    await fetch("/auth/logout", { method: "POST" });
-    loadAccount();
-  });
-}
-loadAccount();
-
 // ---- Backtest -----------------------------------------------------------------
 
 function verdictClass(verdict) {
@@ -207,4 +176,4 @@ btForm.addEventListener("submit", async (e) => {
   } catch (err) {
     btStatus.textContent = "Backtest failed: " + err.message;
   }
-});
+});cl

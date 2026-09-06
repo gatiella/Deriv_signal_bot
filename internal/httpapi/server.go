@@ -1,28 +1,27 @@
-// Package httpapi wires up the dashboard's HTTP + WebSocket surface: the
-// Deriv OAuth login flow, JSON endpoints the frontend polls/calls, and the
-// live websocket feed of signals/snapshots.
+// Package httpapi wires up the dashboard's HTTP + WebSocket surface: JSON
+// endpoints the frontend polls/calls, and the live websocket feed of
+// signals/snapshots. Account linking (Deriv OAuth login) is not included in
+// this build - see README for why - so there's no auth/session layer here.
 package httpapi
 
 import (
 	"net/http"
 
 	"github.com/gatiella/deriv-signal-bot/internal/config"
-	"github.com/gatiella/deriv-signal-bot/internal/cryptoutil"
 	"github.com/gatiella/deriv-signal-bot/internal/store"
 )
 
 // Server holds everything the HTTP handlers need.
 type Server struct {
-	cfg    *config.Config
-	store  *store.Store
-	crypto *cryptoutil.Box
-	hub    *Hub
-	mux    *http.ServeMux
+	cfg   *config.Config
+	store *store.Store
+	hub   *Hub
+	mux   *http.ServeMux
 }
 
 // New builds a Server and registers all routes.
-func New(cfg *config.Config, st *store.Store, box *cryptoutil.Box, hub *Hub) *Server {
-	s := &Server{cfg: cfg, store: st, crypto: box, hub: hub, mux: http.NewServeMux()}
+func New(cfg *config.Config, st *store.Store, hub *Hub) *Server {
+	s := &Server{cfg: cfg, store: st, hub: hub, mux: http.NewServeMux()}
 	s.routes()
 	return s
 }
@@ -44,13 +43,7 @@ func (s *Server) routes() {
 		http.ServeFile(w, r, "web/index.html")
 	})
 
-	// Auth (Deriv OAuth).
-	s.mux.HandleFunc("GET /auth/deriv/login", s.handleLogin)
-	s.mux.HandleFunc("GET /auth/deriv/callback", s.handleCallback)
-	s.mux.HandleFunc("POST /auth/logout", s.handleLogout)
-
 	// JSON API.
-	s.mux.HandleFunc("GET /api/me", s.handleMe)
 	s.mux.HandleFunc("GET /api/signals/recent", s.handleRecentSignals)
 	s.mux.HandleFunc("GET /api/backtest", s.handleBacktest)
 
